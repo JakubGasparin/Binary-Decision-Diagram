@@ -19,78 +19,145 @@ class BDD:
     def __init__(self, string):
             creationTime = time.perf_counter()
             self.root=Node(None, string)
-            self._insert(self.root, string)                  
+            self._insert(self.root, string)      
+            self._getVector(string)        
+            print(self.vectorForComparison)    
              
             print(self.print_tree())
             testerTime = time.perf_counter()
             self._test_search()
-            print("### Statistics ###")
+            print("################# Statistics #################")
             print(f"Creation and print time: {creationTime}")  
             print(f"Total created nodes: {self.totalCreatedNodes}")
             print(f"Created new nodes: {self.createdNewNodes}")
             print(f"Reduced nodes: {self.reducedNodes}")
             print(f"Total reduction: { round((self.reducedNodes * 100 / self.totalCreatedNodes), 2) } %")
-            print(f"Valid nodes: {self.totalTrueNodes}")
+            print(f"Expected nodes: {self.totalTrueNodes}")
+            print(f"Total valid nodes: {self.totalTrueNodes - self.totalCreatedNodes + self.reducedNodes}")
             print(f"Validity check: { True if self.createdNewNodes + self.reducedNodes == self.totalCreatedNodes else False} [Created new nodes({self.createdNewNodes}) + Reduced nodes({self.reducedNodes}) = TotalCreatedNodes({self.totalCreatedNodes})]")
             print(f"Duration of test: {testerTime-creationTime} seconds")
             print(f"Total duration of program: {testerTime+creationTime}")
-            print("##################")
-            #self.Shannon(self.order)
-            #print(self.reduced, self.created_nodes+1)
+            print("##############################################")
             
-    #order = order._orderGenerator()
+  
 
     
     order = ["A","B","C","D","E","F","G","H","I","J","K","L","M"]
     
     search_order = ["A","B","C","D","E","F","G","H","I","J","K","L","M"]
+    length = len(order)
+    vectorForComparison = []
+    vectorIndex = 0
 
     last_char = order[-1]
     second_to_last_char = order[-2]
+
     root = None
-    vector = None
-    noOfVariables = 0
     uniqueNodeDict = {}
     createdNewNodes = 0
     reducedNodes = 0
     totalCreatedNodes = 0
     totalTrueNodes = 0
+    expectedvalidNodes = 0
+
+    def _getVector(self, data):
+
+        if self.second_to_last_char not in data:
+
+            if data == '1':
+                data_left = '1'
+                data_right = '1'
+                self.vectorForComparison += data_left
+                self.vectorForComparison += data_right
+                return
+            
+            if data == '0':
+                data_left = '0'
+                data_right = '0'
+                self.vectorForComparison += data_left
+                self.vectorForComparison += data_right
+
+                return
+
+            if '+' in data:
+                if '!' in data:
+                    data_left = '1'
+                    data_right = '1'
+                    self.vectorForComparison += data_left
+                    self.vectorForComparison += data_right              
+                    return  
+
+                if '!' not in data:
+                    data_left = '0'
+                    data_right = '0'
+                    self.vectorForComparison += data_left
+                    self.vectorForComparison += data_right
+                    return  
+
+            else:
+
+                if '!' not in data:
+                    data_left = '1'
+                    data_right = '0'
+                    self.vectorForComparison += data_left
+                    self.vectorForComparison += data_right
+                    return
+                
+                if '!' in data:
+                    data_left = '0'
+                    data_right = '1'
+                    self.vectorForComparison += data_left
+                    self.vectorForComparison += data_right
+                    return
+
+        data_left, data_right = self.Shannon(data)
+
+        self._getVector(data_left)
+        self._getVector(data_right)
+
 
 
     def _test_search(self):
         count = 0
         index = 0
         check = False
+        testingVector = ""
 
-        while count !=100000:
-            index = 0
-            check = False
-            for i in self.order:
-                self.search_order[index] = randrange(0,2)
-                index = index + 1
-            
-            check = self._search(self.search_order)
+        maxBinNumber = pow(2,self.length)
+        for i in range (maxBinNumber):
+            #print(format(i,'0' + str(self.length)+'b'))
+            testingVector=format(i,'0' + str(self.length)+'b')
+            #print(testingVector)
+            check = self._search(testingVector)
             if check is True:
-                self.totalTrueNodes = self.totalTrueNodes+1
-            count = count + 1
+                self.totalTrueNodes +=1
 
-            
-            #print(self.search_order)
 
-    
     def _search(self, search_order):
         temp = self.root
+        #print(search_order)
 
         for i in range(len(search_order)):
             if search_order[i] == '0':
-                temp=temp.left
+                if temp.left is None:
+                    pass
+                else: 
+                    temp=temp.left
             else:
-                temp = temp.right
+                if temp.left is None:
+                    pass
+                else:
+                    temp=temp.right
             
             if temp is not None and (temp.data == '0' or temp.data == '1'):
-                #print("Data: ")
-                #print(temp.data)
-                return True   
+
+                if temp is not None and (temp.data == self.vectorForComparison[self.vectorIndex]):               
+                    if 0 <= self.vectorIndex < len(self.vectorForComparison):
+                        return True
+                    else: 
+                        self.vectorIndex += 1
+                        return True   
+        
 
         return False
 
@@ -348,8 +415,8 @@ class BDD:
         return self.preorder_print(self.root, "")
 
 if __name__ == "__main__":
-    string = "A.!C+A.B.C+!A.B+!B.C"
-    string = "A.B.D.E.F.G.H.I.J.K.L.M+A.B.D.E.F.G.H.I.J.K.L.M+!A.B.!C.D.!E.F.!G.H.!I.J.!K.L.!M+!H.I.!J.K.!L.M+!A.B.C+A.!B.C.!D.E.F.G.!H.I.!J.K.!L.!M+!A.!B.!C.!D.!E.!F.!G.!H.!I.!J.!K.!L.!M"
-    
-    #string = [0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0]
-    t = BDD(string)
+    string1 = "A.B.D.E.F.G.H.I.J.K.L.M+A.B.D.E.F.G.H.I.J.K.L.M+!A.B.!C.D.!E.F.!G.H.!I.J.!K.L.!M+!H.I.!J.K.!L.M+!A.B.C+A.!B.C.!D.E.F.G.!H.I.!J.K.!L.!M+!A.!B.!C.!D.!E.!F.!G.!H.!I.!J.!K.!L.!M"
+    string2 = "A.B.D.E.F.G.H.I.J.K.L.M+A.B.D.E.F.G.H.I.J.K.L.M+!A.B.!C.D.!E.F.!G.H.!I.J.!K.L.!M+!H.I.!J.K.!L.M+!A.B.C+A.!B.C.!D.E.F.G.!H.I.!J.K.!L.!M+!A.!B.!C.!D.!E.!F.!G.!H.!I.!J.!K.!L.!MA.B.D.E.F.G.H.I.J.K.L.M+A.B.D.E.F.G.H.I.J.K.L.M+!A.B.!C.D.!E.F.!G.H.!I.J.!K.L.!M+!H.I.!J.K.!L.M+!A.B.C+A.!B.C.!D.E.F.G.!H.I.!J.K.!L.!M+!A.!B.!C.!D.!E.!F.!G.!H.!I.!J.!K.!L.!M+A.B.D.E.F.G.H.I.J.K.L.M+A.B.D.E.F.G.H.I.J.K.L.M+!A.B.!C.D.!E.F.!G.H.!I.J.!K.L.!M+!H.I.!J.K.!L.M+!A.B.C+A.!B.C.!D.E.F.G.!H.I.!J.K.!L.!M+!A.!B.!C.!D.!E.!F.!G.!H.!I.!J.!K.!L.!M+A.B.D.E.F.G.H.I.J.K.L.M+A.B.D.E.F.G.H.I.J.K.L.M+!A.B.!C.D.!E.F.!G.H.!I.J.!K.L.!M+!H.I.!J.K.!L.M+!A.B.C+A.!B.C.!D.E.F.G.!H.I.!J.K.!L.!M+!A.!B.!C.!D.!E.!F.!G.!H.!I.!J.!K.!L.!M+A.B.D.E.F.G.H.I.J.K.L.M+A.B.D.E.F.G.H.I.J.K.L.M+!A.B.!C.D.!E.F.!G.H.!I.J.!K.L.!M+!H.I.!J.K.!L.M+!A.B.C+A.!B.C.!D.E.F.G.!H.I.!J.K.!L.!M+!A.!B.!C.!D.!E.!F.!G.!H.!I.!J.!K.!L.!M"
+    string3 = "!A.B.!C.D.!E.F.!G.H.!I.J.!K.L.!M+A.B.C.D.E.F.G.H.I.J.K.L.M+A.B.C.D.E.F.G.H.I.J.K.L.M+!A.B.!C.D.!E.F.!G.H.!I.J.!K.L.!M"
+    string4 = "!M.L.!K.J.!I.H.!G.A.B.C.D.E.F+M.L.K.J.!I.H.G.A.B.C.D.E.F+!M.L.!K.J.!I.H.!G.A.B.C.D.E.F+M.L.K.J.!I.H.G.A.B.C.D.E.F+!M.L.!K.J.!I.H.!G.A.B.C.D.E.F+M.L.K.J.!I.H.G.A.B.C.D.E.F+!M.L.!K.J.!I.H.!G.A.B.C.D.E.F+M.L.K.J.!I.H.G.A.B.C.D.E.F+!M.L.!K.J.!I.H.!G.A.B.C.D.E.F+M.L.K.J.!I.H.G.A.B.C.D.E.F+!M.L.!K.J.!I.H.!G.A.B.C.D.E.F+M.L.K.J.!I.H.G.A.B.C.D.E.F+!M.L.!K.J.!I.H.!G.A.B.C.D.E.F+M.L.K.J.!I.H.G.A.B.C.D.E.F+!M.L.!K.J.!I.H.!G.A.B.C.D.E.F+M.L.K.J.!I.H.G.A.B.C.D.E.F"
+    t = BDD(string4)
